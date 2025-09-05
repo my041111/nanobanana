@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原始分辨率测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .test-image {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .result {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .highlight {
+            background: #fff3cd;
+            color: #856404;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 原始分辨率测试</h1>
+    <p>此页面用于测试图片原始分辨率的获取是否正确</p>
+    
+    <div class="test-section">
+        <h2>🧪 测试用例</h2>
+        
+        <div class="test-item">
+            <h3>1. 高分辨率图片测试</h3>
+            <p>测试一张高分辨率图片的原始尺寸获取</p>
+            <img id="highResImage" class="test-image" alt="高分辨率测试图片" src="https://picsum.photos/1920/1080">
+            <br>
+            <button onclick="testHighResImage()">测试高分辨率图片</button>
+            <div id="highResResult" class="result"></div>
+        </div>
+        
+        <div class="test-item">
+            <h3>2. 小尺寸图片测试</h3>
+            <p>测试一张小尺寸图片的原始尺寸获取</p>
+            <img id="smallImage" class="test-image" alt="小尺寸测试图片" src="https://picsum.photos/100/100">
+            <br>
+            <button onclick="testSmallImage()">测试小尺寸图片</button>
+            <div id="smallResult" class="result"></div>
+        </div>
+        
+        <div class="test-item">
+            <h3>3. 本地生成图片测试</h3>
+            <p>测试本地生成的图片尺寸获取</p>
+            <canvas id="testCanvas" width="300" height="200" style="display: none;"></canvas>
+            <img id="localImage" class="test-image" alt="本地测试图片">
+            <br>
+            <button onclick="testLocalImage()">测试本地图片</button>
+            <div id="localResult" class="result"></div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📋 测试说明</h2>
+        <div class="test-item">
+            <h3>关键区别：</h3>
+            <ul>
+                <li><span class="highlight">img.width / img.height</span>：图片在页面中显示的尺寸（可能被CSS缩放）</li>
+                <li><span class="highlight">img.naturalWidth / img.naturalHeight</span>：图片的原始分辨率（不受CSS影响）</li>
+            </ul>
+            <p><strong>修复内容：</strong>将代码中的 <code>img.width</code> 和 <code>img.height</code> 改回 <code>img.naturalWidth</code> 和 <code>img.naturalHeight</code>，确保获取的是原始分辨率而不是显示尺寸。</p>
+        </div>
+    </div>
+
+    <script>
+        // 测试高分辨率图片
+        function testHighResImage() {
+            const img = document.getElementById('highResImage');
+            const resultDiv = document.getElementById('highResResult');
+            
+            resultDiv.innerHTML = `
+                <strong>测试结果：</strong><br>
+                <span class="highlight">img.width / img.height:</span> ${img.width} × ${img.height}<br>
+                <span class="highlight">img.naturalWidth / img.naturalHeight:</span> ${img.naturalWidth} × ${img.naturalHeight}<br>
+                <span class="highlight">CSS max-width/max-height:</span> 200px × 200px<br>
+                <br>
+                <strong>结论：</strong> ${img.naturalWidth > img.width ? '✅ 原始分辨率正确' : '❌ 显示尺寸错误'}
+            `;
+        }
+        
+        // 测试小尺寸图片
+        function testSmallImage() {
+            const img = document.getElementById('smallImage');
+            const resultDiv = document.getElementById('smallResult');
+            
+            resultDiv.innerHTML = `
+                <strong>测试结果：</strong><br>
+                <span class="highlight">img.width / img.height:</span> ${img.width} × ${img.height}<br>
+                <span class="highlight">img.naturalWidth / img.naturalHeight:</span> ${img.naturalWidth} × ${img.naturalHeight}<br>
+                <span class="highlight">CSS max-width/max-height:</span> 200px × 200px<br>
+                <br>
+                <strong>结论：</strong> ${img.naturalWidth === 100 && img.naturalHeight === 100 ? '✅ 原始分辨率正确' : '❌ 显示尺寸错误'}
+            `;
+        }
+        
+        // 测试本地生成图片
+        function testLocalImage() {
+            const canvas = document.getElementById('testCanvas');
+            const ctx = canvas.getContext('2d');
+            const resultDiv = document.getElementById('localResult');
+            
+            // 绘制测试图片
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(0, 0, 300, 200);
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('300x200', 150, 100);
+            
+            // 生成data URL并设置到img元素
+            const dataUrl = canvas.toDataURL('image/png');
+            const img = document.getElementById('localImage');
+            img.src = dataUrl;
+            
+            // 等待图片加载完成
+            img.onload = () => {
+                resultDiv.innerHTML = `
+                    <strong>测试结果：</strong><br>
+                    <span class="highlight">img.width / img.height:</span> ${img.width} × ${img.height}<br>
+                    <span class="highlight">img.naturalWidth / img.naturalHeight:</span> ${img.naturalWidth} × ${img.naturalHeight}<br>
+                    <span class="highlight">Canvas 尺寸:</span> 300 × 200<br>
+                    <span class="highlight">CSS max-width/max-height:</span> 200px × 200px<br>
+                    <br>
+                    <strong>结论：</strong> ${img.naturalWidth === 300 && img.naturalHeight === 200 ? '✅ 原始分辨率正确' : '❌ 显示尺寸错误'}
+                `;
+            };
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('load', () => {
+            console.log('原始分辨率测试页面已加载');
+            
+            // 延迟一点时间确保图片加载完成
+            setTimeout(() => {
+                testHighResImage();
+                testSmallImage();
+                testLocalImage();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

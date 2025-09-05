@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整功能测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .test-image {
+            max-width: 300px;
+            max-height: 300px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 完整功能测试页面</h1>
+    <p>测试图片处理、尺寸调整和下载功能</p>
+    
+    <div class="test-section">
+        <h2>1. 创建测试图片</h2>
+        <button onclick="createTestImage()">创建测试图片 (1440×1800)</button>
+        <div id="testImageContainer"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 模拟AI处理</h2>
+        <button onclick="simulateAIProcessing()">模拟AI处理 (输出896×1152)</button>
+        <div id="aiResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 测试尺寸调整</h2>
+        <button onclick="testResize()">调整到原始尺寸 (1440×1800)</button>
+        <div id="resizeResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 测试下载功能</h2>
+        <button onclick="testDownload()">下载调整后的图片</button>
+        <div id="downloadResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. 测试日志</h2>
+        <div id="logContainer" class="log"></div>
+        <button onclick="clearLog()">清空日志</button>
+    </div>
+
+    <script>
+        let testImageDataUrl = null;
+        let aiProcessedImageUrl = null;
+        let resizedImageUrl = null;
+        let originalDimensions = { width: 1440, height: 1800 };
+        
+        // 日志函数
+        function log(message) {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            logContainer.innerHTML += `[${timestamp}] ${message}\n`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+        
+        // 创建测试图片
+        function createTestImage() {
+            log('开始创建测试图片...');
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 创建原始尺寸的测试图片 (1440×1800)
+            canvas.width = originalDimensions.width;
+            canvas.height = originalDimensions.height;
+            
+            // 绘制渐变背景
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(1, '#4ecdc4');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 添加文字
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('原始图片', canvas.width/2, canvas.height/2 - 50);
+            ctx.font = '36px Arial';
+            ctx.fillText(`${canvas.width}×${canvas.height}`, canvas.width/2, canvas.height/2 + 50);
+            
+            // 生成data URL
+            testImageDataUrl = canvas.toDataURL('image/png');
+            
+            // 显示图片
+            const container = document.getElementById('testImageContainer');
+            container.innerHTML = `
+                <img src="${testImageDataUrl}" class="test-image" alt="测试图片">
+                <div class="status success">✅ 测试图片创建成功</div>
+                <p>尺寸: ${canvas.width} × ${canvas.height} 像素</p>
+            `;
+            
+            log(`测试图片创建成功: ${canvas.width}×${canvas.height}`);
+        }
+        
+        // 模拟AI处理
+        function simulateAIProcessing() {
+            if (!testImageDataUrl) {
+                alert('请先创建测试图片');
+                return;
+            }
+            
+            log('开始模拟AI处理...');
+            
+            const resultDiv = document.getElementById('aiResult');
+            resultDiv.innerHTML = '<div class="status info">🔄 AI处理中...</div>';
+            
+            // 模拟AI处理延迟
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // AI输出较小尺寸的图片 (896×1152)
+                canvas.width = 896;
+                canvas.height = 1152;
+                
+                // 绘制渐变背景
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#4ecdc4');
+                gradient.addColorStop(1, '#ff6b6b');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 添加文字
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('AI处理结果', canvas.width/2, canvas.height/2 - 30);
+                ctx.font = '24px Arial';
+                ctx.fillText(`${canvas.width}×${canvas.height}`, canvas.width/2, canvas.height/2 + 30);
+                ctx.font = '18px Arial';
+                ctx.fillText('需要调整到原始尺寸', canvas.width/2, canvas.height/2 + 80);
+                
+                // 生成data URL
+                aiProcessedImageUrl = canvas.toDataURL('image/png');
+                
+                resultDiv.innerHTML = `
+                    <img src="${aiProcessedImageUrl}" class="test-image" alt="AI处理结果">
+                    <div class="status success">✅ AI处理完成</div>
+                    <p>AI输出尺寸: ${canvas.width} × ${canvas.height} 像素</p>
+                    <p>原始尺寸: ${originalDimensions.width} × ${originalDimensions.height} 像素</p>
+                    <p>⚠️ 尺寸不匹配，需要调整</p>
+                `;
+                
+                log(`AI处理完成: ${canvas.width}×${canvas.height} (需要调整到 ${originalDimensions.width}×${originalDimensions.height})`);
+            }, 1000);
+        }
+        
+        // 测试图片尺寸调整
+        function testResize() {
+            if (!aiProcessedImageUrl) {
+                alert('请先进行AI处理');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('resizeResult');
+            resultDiv.innerHTML = '<div class="status info">🔄 调整图片尺寸中...</div>';
+            
+            log('开始调整图片尺寸...');
+            
+            // 使用前端Canvas调整图片尺寸
+            fastResizeImage(aiProcessedImageUrl, originalDimensions.width, originalDimensions.height)
+                .then(resizedUrl => {
+                    resizedImageUrl = resizedUrl;
+                    resultDiv.innerHTML = `
+                        <img src="${resizedUrl}" class="test-image" alt="调整后的图片">
+                        <div class="status success">✅ 图片尺寸调整成功</div>
+                        <p>调整后尺寸: ${originalDimensions.width} × ${originalDimensions.height} 像素</p>
+                        <p>✅ 与原始尺寸一致</p>
+                    `;
+                    log(`图片尺寸调整成功: ${originalDimensions.width}×${originalDimensions.height}`);
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `
+                        <div class="status error">❌ 图片尺寸调整失败: ${error.message}</div>
+                    `;
+                    log(`图片尺寸调整失败: ${error.message}`);
+                });
+        }
+        
+        // 测试下载功能
+        function testDownload() {
+            const imageUrl = resizedImageUrl || aiProcessedImageUrl || testImageDataUrl;
+            
+            if (!imageUrl) {
+                alert('请先创建或处理图片');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('downloadResult');
+            resultDiv.innerHTML = '<div class="status info">🔄 准备下载...</div>';
+            
+            log('开始下载图片...');
+            
+            try {
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                
+                // 生成文件名
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                let filename = `test-image-${timestamp}.png`;
+                
+                // 如果调整了尺寸，在文件名中标注
+                if (resizedImageUrl) {
+                    filename = `test-image-${originalDimensions.width}x${originalDimensions.height}-${timestamp}.png`;
+                }
+                
+                link.download = filename;
+                link.style.display = 'none';
+                
+                // 添加到DOM，点击，然后清理
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✅ 图片下载成功！</div>
+                    <p>文件名: ${filename}</p>
+                    <p>图片尺寸: ${resizedImageUrl ? `${originalDimensions.width}×${originalDimensions.height}` : '原始尺寸'}</p>
+                `;
+                log(`图片下载成功: ${filename}`);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ 图片下载失败: ${error.message}</div>
+                `;
+                log(`图片下载失败: ${error.message}`);
+            }
+        }
+        
+        // 前端图片尺寸调整函数
+        function fastResizeImage(imageUrl, targetWidth, targetHeight) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                
+                const timeout = setTimeout(() => {
+                    reject(new Error('图片加载超时'));
+                }, 10000);
+                
+                img.onload = () => {
+                    clearTimeout(timeout);
+                    
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = targetWidth;
+                        canvas.height = targetHeight;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        
+                        // 绘制缩放后的图片
+                        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+                        
+                        // 转换为高质量PNG格式
+                        const resizedUrl = canvas.toDataURL('image/png', 1.0);
+                        log(`图片尺寸调整完成: ${targetWidth}x${targetHeight}`);
+                        resolve(resizedUrl);
+                    } catch (error) {
+                        log(`Canvas处理失败: ${error.message}`);
+                        reject(new Error('图片处理失败: ' + error.message));
+                    }
+                };
+                
+                img.onerror = (error) => {
+                    clearTimeout(timeout);
+                    log(`图片加载失败: ${error}`);
+                    reject(new Error('图片加载失败'));
+                };
+                
+                img.src = imageUrl;
+            });
+        }
+        
+        // 页面加载时自动创建测试图片
+        window.addEventListener('load', () => {
+            log('完整功能测试页面已加载');
+            setTimeout(() => {
+                createTestImage();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

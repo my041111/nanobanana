@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下载功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+        }
+        .test-image {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>📥 下载功能测试</h1>
+    <p>此页面用于测试图片下载功能是否正常工作</p>
+    
+    <div class="test-section">
+        <h2>🧪 测试用例</h2>
+        
+        <div class="test-item">
+            <h3>1. Data URL 格式图片下载测试</h3>
+            <p>测试 data:image/png;base64 格式的图片下载</p>
+            <canvas id="testCanvas" width="100" height="100" style="display: none;"></canvas>
+            <img id="dataUrlImage" class="test-image" alt="测试图片">
+            <br>
+            <button onclick="testDataUrlDownload()">测试 Data URL 下载</button>
+            <span id="dataUrlStatus"></span>
+        </div>
+        
+        <div class="test-item">
+            <h3>2. HTTP URL 格式图片下载测试</h3>
+            <p>测试 http/https 格式的图片下载</p>
+            <img id="httpUrlImage" class="test-image" alt="测试图片" src="https://via.placeholder.com/200x200/007bff/ffffff?text=Test+Image">
+            <br>
+            <button onclick="testHttpUrlDownload()">测试 HTTP URL 下载</button>
+            <span id="httpUrlStatus"></span>
+        </div>
+        
+        <div class="test-item">
+            <h3>3. 本地图片下载测试</h3>
+            <p>测试本地图片的下载功能</p>
+            <img id="localImage" class="test-image" alt="测试图片" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMjhhNzQ1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Mb2NhbCBJbWFnZTwvdGV4dD48L3N2Zz4=">
+            <br>
+            <button onclick="testLocalDownload()">测试本地图片下载</button>
+            <span id="localStatus"></span>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📋 测试日志</h2>
+        <div id="testLog" class="log"></div>
+        <button onclick="clearLog()">清除日志</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>📝 测试说明</h2>
+        <div class="test-item">
+            <h3>下载功能改进：</h3>
+            <ul>
+                <li><strong>Data URL 格式：</strong> 直接使用 link.download 下载</li>
+                <li><strong>HTTP URL 格式：</strong> 使用 fetch 获取图片数据，然后创建 blob URL 下载</li>
+                <li><strong>避免跳转：</strong> 不再直接使用 link.href = imageUrl，避免浏览器跳转</li>
+                <li><strong>错误处理：</strong> 包含网络错误重试机制</li>
+                <li><strong>内存管理：</strong> 自动清理 blob URL 防止内存泄漏</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 日志功能
+        function log(message) {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('testLog').innerHTML = '';
+        }
+        
+        // 更新状态显示
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = message;
+        }
+        
+        // 生成测试用的 Data URL 图片
+        function generateTestImage() {
+            const canvas = document.getElementById('testCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 绘制渐变背景
+            const gradient = ctx.createLinearGradient(0, 0, 100, 100);
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(1, '#4ecdc4');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 100, 100);
+            
+            // 添加文字
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Test', 50, 50);
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            document.getElementById('dataUrlImage').src = dataUrl;
+            
+            return dataUrl;
+        }
+        
+        // 测试 Data URL 下载
+        function testDataUrlDownload() {
+            log('开始测试 Data URL 下载...');
+            updateStatus('dataUrlStatus', 'warning', '测试中...');
+            
+            try {
+                const dataUrl = generateTestImage();
+                log(`生成的 Data URL: ${dataUrl.substring(0, 50)}...`);
+                
+                // 模拟下载功能
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `test-data-url-${Date.now()}.png`;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log('Data URL 下载链接已触发');
+                updateStatus('dataUrlStatus', 'success', '✅ 成功');
+                
+            } catch (error) {
+                log(`Data URL 下载失败: ${error.message}`);
+                updateStatus('dataUrlStatus', 'error', '❌ 失败');
+            }
+        }
+        
+        // 测试 HTTP URL 下载
+        function testHttpUrlDownload() {
+            log('开始测试 HTTP URL 下载...');
+            updateStatus('httpUrlStatus', 'warning', '测试中...');
+            
+            const imageUrl = 'https://via.placeholder.com/200x200/007bff/ffffff?text=Test+Image';
+            log(`测试图片 URL: ${imageUrl}`);
+            
+            fetch(imageUrl, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: {
+                    'Accept': 'image/*'
+                }
+            })
+            .then(response => {
+                log(`Fetch 响应状态: ${response.status} ${response.statusText}`);
+                if (!response.ok) {
+                    throw new Error(`图片下载失败: ${response.status} ${response.statusText}`);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                log(`图片数据获取成功，blob 大小: ${blob.size} 字节`);
+                log(`blob 类型: ${blob.type}`);
+                
+                // 创建blob URL
+                const blobUrl = URL.createObjectURL(blob);
+                log(`创建的 blob URL: ${blobUrl}`);
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `test-http-url-${Date.now()}.png`;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log('HTTP URL 下载链接已触发');
+                
+                // 清理blob URL
+                setTimeout(() => {
+                    URL.revokeObjectURL(blobUrl);
+                    log('blob URL 已清理');
+                }, 1000);
+                
+                updateStatus('httpUrlStatus', 'success', '✅ 成功');
+                
+            })
+            .catch(error => {
+                log(`HTTP URL 下载失败: ${error.message}`);
+                updateStatus('httpUrlStatus', 'error', '❌ 失败');
+            });
+        }
+        
+        // 测试本地图片下载
+        function testLocalDownload() {
+            log('开始测试本地图片下载...');
+            updateStatus('localStatus', 'warning', '测试中...');
+            
+            const localImage = document.getElementById('localImage');
+            const dataUrl = localImage.src;
+            log(`本地图片 Data URL: ${dataUrl.substring(0, 50)}...`);
+            
+            try {
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `test-local-image-${Date.now()}.svg`;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log('本地图片下载链接已触发');
+                updateStatus('localStatus', 'success', '✅ 成功');
+                
+            } catch (error) {
+                log(`本地图片下载失败: ${error.message}`);
+                updateStatus('localStatus', 'error', '❌ 失败');
+            }
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            log('下载功能测试页面已加载');
+            generateTestImage();
+        });
+    </script>
+</body>
+</html>
