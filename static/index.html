@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nano banana - AI修图工具</title>
+    <link rel="icon" href="/xiguadepi.jpeg" type="image/jpeg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1 class="title">🍌 nano banana</h1>
+    </header>
+    
+    <div class="main-container">
+        <div class="controls-container">
+            <div class="api-key-section">
+                <h2>设置</h2>
+                <input type="password" id="api-key-input" placeholder="输入你的 OpenRouter API 密钥 (必填)">
+                <input type="text" id="api-base-url-input" placeholder="API地址 (可选，默认使用OpenRouter)" value="https://openrouter.ai/api/v1/chat/completions">
+            </div>
+            
+            <div class="model-section">
+                <h2>模型选择</h2>
+                <input type="text" id="model-input" placeholder="输入模型名称" value="google/gemini-2.5-flash-image-preview:free">
+            </div>
+            
+            <div class="input-method-section">
+                <h2>1. 选择输入方式</h2>
+                <div class="input-method-tabs">
+                    <button class="tab-btn active" data-method="upload">上传图片</button>
+                    <button class="tab-btn" data-method="url">图片URL</button>
+                </div>
+                
+                <!-- 上传图片方式 -->
+                <div id="upload-method" class="input-method-content active">
+                    <div class="upload-area">
+                        <input type="file" id="image-upload" accept="image/*" multiple>
+                        <label for="image-upload">
+                            <p>点击或拖拽上传</p>
+                            <span>支持多张图片</span>
+                        </label>
+                    </div>
+                    <div id="thumbnails-container"></div>
+                </div>
+                
+                <!-- URL输入方式 -->
+                <div id="url-method" class="input-method-content">
+                    <textarea id="image-url-input" placeholder="请输入图片URL，每行一个URL，支持多张图片"></textarea>
+                    <div id="url-preview-container"></div>
+                </div>
+            </div>
+
+            <div class="prompt-section">
+                <h2>2. 输入修图指令</h2>
+                <textarea id="prompt-input" placeholder="例如：将背景改为蓝色，增加对比度，保持原始分辨率"></textarea>
+            </div>
+            
+            <div class="dimensions-section">
+                <h2>3. 图片尺寸信息</h2>
+                <div class="dimensions-display">
+                    <div class="dimension-item">
+                        <span class="dimension-label">原始尺寸:</span>
+                        <span id="original-dimensions" class="dimension-value">未选择图片</span>
+                    </div>
+                    <div class="dimension-item">
+                        <span class="dimension-label">目标尺寸:</span>
+                        <span id="target-dimensions" class="dimension-value">保持原始分辨率</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="generate-btn">
+                <span class="btn-text">开始修图</span>
+                <span class="spinner hidden"></span>
+            </button>
+        </div>
+
+        <div class="result-container">
+            <div class="result-header">
+                <h2>修图结果</h2>
+                <div class="result-controls">
+                    <button id="history-btn" class="history-btn">
+                        <span class="history-icon">📋</span>
+                        历史记录
+                    </button>
+                    <button id="clear-history-btn" class="clear-history-btn">
+                        <span class="clear-icon">🗑️</span>
+                        清空历史
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 进度显示区域 -->
+            <div id="progress-container" class="progress-container">
+                <div class="progress-header">
+                    <h3>处理进度</h3>
+                    <span id="progress-status">准备中...</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <span id="progress-text">0%</span>
+                </div>
+                <div class="progress-steps">
+                    <div class="step" data-step="upload">
+                        <span class="step-icon">📤</span>
+                        <span class="step-text">上传图片</span>
+                    </div>
+                    <div class="step" data-step="process">
+                        <span class="step-icon">⚙️</span>
+                        <span class="step-text">AI处理</span>
+                    </div>
+                    <div class="step" data-step="generate">
+                        <span class="step-icon">🎨</span>
+                        <span class="step-text">生成图片</span>
+                    </div>
+                    <div class="step" data-step="complete">
+                        <span class="step-icon">✅</span>
+                        <span class="step-text">完成</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="result-image-container">
+                <p>修图后的图片将显示在这里</p>
+            </div>
+            
+            <div id="result-info" class="result-info hidden">
+                <div class="info-item">
+                    <span class="info-label">处理时间:</span>
+                    <span id="processed-time" class="info-value"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">输出尺寸:</span>
+                    <span id="output-dimensions" class="info-value"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">使用模型:</span>
+                    <span id="used-model" class="info-value"></span>
+                </div>
+                <div class="download-section">
+                    <p class="download-hint">💡 下载高质量图片</p>
+                    <button id="download-btn" class="download-btn hidden">
+                        <span class="download-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L12 16M12 16L18 10M12 16L6 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 17L2 19C2 19.5304 2.21071 20.0391 2.58579 20.4142C2.96086 20.7893 3.46957 21 4 21H20C20.5304 21 21.0391 20.7893 21.4142 20.4142C21.7893 20.0391 22 19.5304 22 19V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="download-text">下载图片</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 历史记录模态框 -->
+    <div id="history-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>历史记录</h3>
+                <button id="close-history-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="history-list" class="history-list">
+                    <!-- 历史记录项将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
