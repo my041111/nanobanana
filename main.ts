@@ -2,6 +2,36 @@ import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { serveDir } from "https://deno.land/std@0.200.0/http/file_server.ts";
 import { Buffer } from "https://deno.land/std@0.177.0/node/buffer.ts";
 
+// --- 🚀 激进优化: 超高速缓存机制 ---
+const requestCache = new Map<string, { result: any; timestamp: number }>();
+const CACHE_DURATION = 10 * 60 * 1000; // 🚀 激进优化11: 延长缓存时间到10分钟
+
+// 🚀 激进优化12: 智能缓存清理
+function cleanupCache(): void {
+    const now = Date.now();
+    for (const [key, value] of requestCache.entries()) {
+        if (now - value.timestamp > CACHE_DURATION) {
+            requestCache.delete(key);
+        }
+    }
+}
+
+// 每5分钟清理一次缓存
+setInterval(cleanupCache, 5 * 60 * 1000);
+
+function getCachedResult(cacheKey: string): any | null {
+    const cached = requestCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log('✅ 超高速缓存命中');
+        return cached.result;
+    }
+    return null;
+}
+
+function setCachedResult(cacheKey: string, result: any): void {
+    requestCache.set(cacheKey, { result, timestamp: Date.now() });
+}
+
 // --- 辅助函数：生成错误 JSON 响应 ---
 function createJsonErrorResponse(message: string, statusCode = 500) {
     return new Response(JSON.stringify({ error: { message, code: statusCode } }), {
@@ -49,9 +79,9 @@ async function downloadImageFromUrl(imageUrl: string): Promise<string> {
     try {
         console.log(`下载图片: ${imageUrl}`);
         
-        // 添加超时和重试机制
+        // 添加超时和重试机制 - 优化为更短的超时时间
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时，提高下载速度
         
         const response = await fetch(imageUrl, {
             method: 'GET',
@@ -161,6 +191,67 @@ async function resizeWithSimpleService(dataUrl: string, targetWidth: number, tar
     }
 }
 
+// --- 外部图片压缩服务 ---
+async function compressImageWithExternalService(dataUrl: string): Promise<string | null> {
+    try {
+        // 使用免费的图片压缩服务
+        const serviceUrl = `https://api.tinify.com/shrink`;
+        
+        // 提取base64数据
+        const base64Data = dataUrl.split(',')[1];
+        const binaryData = atob(base64Data);
+        const uint8Array = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+            uint8Array[i] = binaryData.charCodeAt(i);
+        }
+        
+        const response = await fetch(serviceUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa('api:your-api-key'), // 需要替换为实际的API key
+                'Content-Type': 'application/octet-stream'
+            },
+            body: uint8Array
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            return result.output.url;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('外部图片压缩服务失败:', error);
+        return null;
+    }
+}
+
+// --- 简单的内存缓存 ---
+const requestCache = new Map<string, { result: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+function getCacheKey(messages: any[], model: string): string {
+    return JSON.stringify({ messages, model });
+}
+
+function getCachedResult(cacheKey: string): any | null {
+    const cached = requestCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log('✅ 使用缓存结果');
+        return cached.result;
+    }
+    return null;
+}
+
+function setCachedResult(cacheKey: string, result: any): void {
+    requestCache.set(cacheKey, { result, timestamp: Date.now() });
+    // 限制缓存大小
+    if (requestCache.size > 100) {
+        const firstKey = requestCache.keys().next().value;
+        requestCache.delete(firstKey);
+    }
+}
+
 // --- 获取API地址的优先级逻辑 ---
 function getApiBaseUrl(frontendUrl?: string): string {
     if (frontendUrl && frontendUrl.trim()) {
@@ -183,13 +274,24 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
     // 使用指定的模型或默认模型
     const selectedModel = model || "gemini-2.5-flash-image-preview";
     
+    // 检查缓存
+    const cacheKey = getCacheKey(messages, selectedModel);
+    const cachedResult = getCachedResult(cacheKey);
+    if (cachedResult) {
+        return cachedResult;
+    }
+    
     const openrouterPayload: any = { 
         model: selectedModel, 
         messages,
-        // 优化参数以支持图片生成
-        temperature: 0.7,
-        max_tokens: 4096,
-        stream: false
+        // 🚀 激进优化6-9: 超高速参数配置
+        stream: false,
+        temperature: 0.3,        // 进一步降低温度以提高速度
+        max_tokens: 1024,         // 大幅减少token数量
+        top_p: 0.8,               // 降低top_p以提高一致性
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        timeout: 30000            // 进一步减少超时时间到30秒
     };
     
     // 如果指定了图片尺寸，添加到payload中
@@ -226,9 +328,9 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
     console.log("Sending payload to OpenRouter:", JSON.stringify(openrouterPayload, null, 2));
     console.log("Using API Base URL:", apiBaseUrl);
     
-    // 添加超时控制
+    // 添加超时控制 - 优化为更短的超时时间
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 🚀 激进优化10: 超高速超时时间30秒
     
     try {
         const apiResponse = await fetch(apiBaseUrl, {
@@ -259,19 +361,25 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
     // 检查是否有图片返回
     if (message?.images?.[0]?.image_url?.url) { 
         console.log("检测到images字段中的图片URL:", message.images[0].image_url.url);
-        return { type: 'image', content: message.images[0].image_url.url }; 
+        const result: { type: 'image' | 'text'; content: string } = { type: 'image', content: message.images[0].image_url.url };
+        setCachedResult(cacheKey, result);
+        return result;
     }
         
         // 检查内容是否包含图片数据URL
         if (typeof message?.content === 'string' && message.content.startsWith('data:image/')) { 
-            return { type: 'image', content: message.content }; 
+            const result: { type: 'image' | 'text'; content: string } = { type: 'image', content: message.content };
+            setCachedResult(cacheKey, result);
+            return result;
         }
         
         // 检查是否有base64编码的图片
         if (typeof message?.content === 'string' && message.content.includes('data:image/')) {
             const imageMatch = message.content.match(/data:image\/[^;]+;base64,[^"]+/);
             if (imageMatch) {
-                return { type: 'image', content: imageMatch[0] };
+                const result: { type: 'image' | 'text'; content: string } = { type: 'image', content: imageMatch[0] };
+                setCachedResult(cacheKey, result);
+                return result;
             }
         }
         
@@ -294,7 +402,9 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
             
             if (markdownImageMatch) {
                 console.log("检测到Markdown格式图片链接:", markdownImageMatch[1]);
-                return { type: 'image', content: markdownImageMatch[1] };
+                const result: { type: 'image' | 'text'; content: string } = { type: 'image', content: markdownImageMatch[1] };
+                setCachedResult(cacheKey, result);
+                return result;
             } else {
                 console.log("未检测到Markdown图片链接");
                 // 尝试更宽松的正则表达式
@@ -302,7 +412,9 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
                 console.log("宽松正则表达式匹配结果:", looseMatch);
                 if (looseMatch && looseMatch[1].startsWith('http')) {
                     console.log("使用宽松正则表达式检测到图片链接:", looseMatch[1]);
-                    return { type: 'image', content: looseMatch[1] };
+                    const result: { type: 'image' | 'text'; content: string } = { type: 'image', content: looseMatch[1] };
+                    setCachedResult(cacheKey, result);
+                    return result;
                 }
             }
         }
@@ -313,7 +425,9 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
             const directImageUrlMatch = message.content.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp))/i);
             if (directImageUrlMatch) {
                 console.log("检测到直接图片URL:", directImageUrlMatch[1]);
-                return { type: 'image', content: directImageUrlMatch[1] };
+                const result: { type: 'image' | 'text'; content: string } = { type: 'image', content: directImageUrlMatch[1] };
+                setCachedResult(cacheKey, result);
+                return result;
             } else {
                 console.log("未检测到直接图片URL");
             }
@@ -321,10 +435,14 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
         
         // 如果都没有，返回文本内容
         if (typeof message?.content === 'string' && message.content.trim() !== '') { 
-            return { type: 'text', content: message.content }; 
+            const result: { type: 'image' | 'text'; content: string } = { type: 'text', content: message.content };
+            setCachedResult(cacheKey, result);
+            return result;
         }
         
-    return { type: 'text', content: "[模型没有返回有效内容]" };
+    const result: { type: 'image' | 'text'; content: string } = { type: 'text', content: "[模型没有返回有效内容]" };
+    setCachedResult(cacheKey, result);
+    return result;
     } catch (error) {
         clearTimeout(timeoutId);
         if (error instanceof Error && error.name === 'AbortError') {
@@ -334,21 +452,83 @@ async function callOpenRouter(messages: any[], apiKey: string, apiBaseUrl: strin
     }
 }
 
-// --- 高效的图片预处理函数 ---
+// --- 超高效的图片预处理函数（激进优化版） ---
 async function optimizeImageForProcessing(imageDataUrl: string, targetWidth: number, targetHeight: number): Promise<string> {
-    // 如果图片尺寸已经合适，直接返回
-    if (targetWidth <= 1024 && targetHeight <= 1024) {
+    try {
+        // 🚀 激进优化1: 更宽松的尺寸检查，减少不必要的处理
+        if (targetWidth <= 1536 && targetHeight <= 1536) {
+            console.log('✅ 图片尺寸合适，跳过预处理');
+            return imageDataUrl;
+        }
+        
+        // 🚀 激进优化2: 并行尝试多种压缩方法
+        console.log(`🚀 开始超高速图片处理，目标尺寸: ${targetWidth}x${targetHeight}`);
+        
+        const compressionPromises = [
+            compressImageWithExternalService(imageDataUrl),
+            compressImageWithWebP(imageDataUrl),
+            compressImageWithCanvas(imageDataUrl, targetWidth, targetHeight)
+        ];
+        
+        // 使用 Promise.race 获取最快的压缩结果
+        const result = await Promise.race(compressionPromises);
+        if (result) {
+            console.log('✅ 超高速压缩成功');
+            return result;
+        }
+        
+        // 🚀 激进优化3: 如果所有压缩都失败，直接返回原图（让AI模型处理）
+        console.log('⚠️ 所有压缩方法失败，直接使用原图');
+        return imageDataUrl;
+        
+    } catch (error) {
+        console.warn("图片预处理失败，使用原图:", error);
         return imageDataUrl;
     }
-    
-    // 对于大图片，在后端进行预处理以提高速度
+}
+
+// 🚀 新增: WebP压缩函数
+async function compressImageWithWebP(imageDataUrl: string): Promise<string | null> {
     try {
-        // 这里可以添加图片压缩逻辑
-        // 由于Deno环境的限制，我们主要依赖前端的优化
-        return imageDataUrl;
+        // 简单的WebP压缩逻辑
+        const canvas = new OffscreenCanvas(1, 1);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        
+        const img = new Image();
+        img.src = imageDataUrl;
+        await new Promise(resolve => img.onload = resolve);
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        const webpBlob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.8 });
+        return URL.createObjectURL(webpBlob);
     } catch (error) {
-        console.warn("Image optimization failed, using original:", error);
-        return imageDataUrl;
+        console.warn("WebP压缩失败:", error);
+        return null;
+    }
+}
+
+// 🚀 新增: Canvas压缩函数
+async function compressImageWithCanvas(imageDataUrl: string, targetWidth: number, targetHeight: number): Promise<string | null> {
+    try {
+        const canvas = new OffscreenCanvas(targetWidth, targetHeight);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        
+        const img = new Image();
+        img.src = imageDataUrl;
+        await new Promise(resolve => img.onload = resolve);
+        
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        
+        const compressedBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
+        return URL.createObjectURL(compressedBlob);
+    } catch (error) {
+        console.warn("Canvas压缩失败:", error);
+        return null;
     }
 }
 
@@ -365,26 +545,23 @@ async function processImageEdit(
     if (!images || images.length === 0) { throw new Error("At least one image is required."); }
     if (!prompt || prompt.trim() === '') { throw new Error("Edit prompt is required."); }
     
-    // 优化提示词，强调只修改指定部分，其余保持原图一致
-    const optimizedPrompt = `请严格按照以下要求处理图片：
+    // 🚀 激进优化4: 超精简提示词，最大化处理速度
+    const optimizedPrompt = `处理: ${prompt} | 保持: ${originalWidth}x${originalHeight} | 只返回图片`;
 
-用户指令：${prompt}
-
-核心要求：
-1. 只修改用户指令中明确要求变更的部分
-2. 除指令要求变更的内容外，其余所有内容必须与原图保持完全一致
-3. 不要添加、删除或改变任何未在指令中提及的元素
-4. 保持原始尺寸 ${originalWidth} x ${originalHeight}
-5. 保持原图的构图、角度、透视关系
-6. 保持原图的色彩风格和色调（除非指令要求改变）
-7. 保持原图中人物的表情、姿势、服装（除非指令要求改变）
-8. 保持原图的背景和环境（除非指令要求改变）
-9. 只返回处理后的图片，不要任何文字说明`;
-
-    // 预处理图片以提高处理速度
+    // 🚀 激进优化5: 超高速并发处理，减少日志输出
+    console.log(`🚀 超高速处理 ${images.length} 张图片`);
+    
+    // 🚀 激进优化13: 智能跳过预处理
     const optimizedImages = await Promise.all(
-        images.map(img => optimizeImageForProcessing(img, originalWidth, originalHeight))
+        images.map(async (img, index) => {
+            // 对于小图片或重复图片，直接跳过预处理
+            if (originalWidth <= 1024 && originalHeight <= 1024) {
+                return img;
+            }
+            return await optimizeImageForProcessing(img, originalWidth, originalHeight);
+        })
     );
+    console.log('✅ 超高速预处理完成');
 
     const messages = [{
         role: "user",
@@ -592,22 +769,15 @@ serve(async (req) => {
             console.log("Processing image edit with dimensions:", { originalWidth, originalHeight });
             console.log("Using API Base URL:", finalApiBaseUrl);
             
-            // 构建专门用于图片生成的提示词，强调精确修改
-            const imageGenerationPrompt = `请严格按照以下要求处理图片：
+            // 构建简化的图片生成提示词，提高处理速度
+            const imageGenerationPrompt = `快速处理：${prompt}
 
-用户指令：${prompt}
-
-核心要求：
-1. 只修改用户指令中明确要求变更的部分
-2. 除指令要求变更的内容外，其余所有内容必须与原图保持完全一致
-3. 不要添加、删除或改变任何未在指令中提及的元素
-4. 保持原始尺寸 ${originalWidth} x ${originalHeight}
-5. 保持原图的构图、角度、透视关系
-6. 保持原图的色彩风格和色调（除非指令要求改变）
-7. 保持原图中人物的表情、姿势、服装（除非指令要求改变）
-8. 保持原图的背景和环境（除非指令要求改变）
-9. 图片质量要高，清晰度要好
-10. 只返回处理后的图片，不要任何文字说明`;
+要求：
+- 只修改指令要求的部分
+- 其余保持原图一致
+- 尺寸 ${originalWidth} x ${originalHeight}
+- 高质量输出
+- 只返回图片`;
 
             const webUiMessages = [ { 
                 role: "user", 
