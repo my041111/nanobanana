@@ -283,11 +283,11 @@
                 
                 // 生成文件名
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `test-image-${timestamp}.png`;
+                let filename = `image-${timestamp}.png`;
                 
                 // 如果调整了尺寸，在文件名中标注
                 if (resizedImageUrl) {
-                    filename = `test-image-${originalDimensions.width}x${originalDimensions.height}-${timestamp}.png`;
+                    filename = `image-${originalDimensions.width}x${originalDimensions.height}-${timestamp}.png`;
                 }
                 
                 link.download = filename;

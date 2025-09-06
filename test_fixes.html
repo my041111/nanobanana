@@ -381,10 +381,10 @@
                 
                 // 生成文件名
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `test-download-${timestamp}.png`;
+                let filename = `image-${timestamp}.png`;
                 
                 if (targetWidth && targetHeight) {
-                    filename = `test-download-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `image-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 link.download = filename;
@@ -408,10 +408,10 @@
                 
                 // 生成文件名
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `test-download-${timestamp}.png`;
+                let filename = `image-${timestamp}.png`;
                 
                 if (targetWidth && targetHeight) {
-                    filename = `test-download-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `image-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 link.download = filename;
@@ -450,10 +450,10 @@
                         
                         // 生成文件名
                         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                        let filename = `test-download-${timestamp}.png`;
+                        let filename = `image-${timestamp}.png`;
                         
                         if (targetWidth && targetHeight) {
-                            filename = `test-download-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                            filename = `image-${targetWidth}x${targetHeight}-${timestamp}.png`;
                         }
                         
                         // 创建下载链接
@@ -489,11 +489,11 @@
                 link.href = imageUrl;
                 
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `test-history-${timestamp}.png`;
+                let filename = `photo-${timestamp}.png`;
                 
                 // 如果调整了尺寸，在文件名中标注
                 if (targetWidth && targetHeight) {
-                    filename = `test-history-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `photo-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 // 创建下载链接
@@ -529,11 +529,11 @@
                         const blobUrl = URL.createObjectURL(blob);
                         
                         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                        let filename = `test-history-${timestamp}.png`;
+                        let filename = `photo-${timestamp}.png`;
                         
                         // 如果调整了尺寸，在文件名中标注
                         if (targetWidth && targetHeight) {
-                            filename = `test-history-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                            filename = `photo-${targetWidth}x${targetHeight}-${timestamp}.png`;
                         }
                         
                         // 创建下载链接

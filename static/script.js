@@ -721,11 +721,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // 生成文件名
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `nano-banana-修图结果-${timestamp}.png`;
+                let filename = `image-${timestamp}.png`;
                 
                 // 如果调整了尺寸，在文件名中标注
                 if (targetWidth && targetHeight) {
-                    filename = `nano-banana-修图结果-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `image-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 console.log('生成的文件名:', filename);
@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         downloadBtn.classList.remove('success');
                         downloadBtn.disabled = false;
                         if (targetWidth && targetHeight) {
-                            downloadBtn.querySelector('.download-text').textContent = `下载图片 (已调整到原始尺寸 ${targetWidth}×${targetHeight})`;
+                            downloadBtn.querySelector('.download-text').textContent = `下载图片 ${targetWidth}×${targetHeight})`;
                         } else {
                             downloadBtn.querySelector('.download-text').textContent = '下载图片';
                         }
@@ -787,11 +787,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('创建的 blob URL:', blobUrl);
                 
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `nano-banana-修图结果-${timestamp}.png`;
+                let filename = `image-${timestamp}.png`;
                 
                 // 如果调整了尺寸，在文件名中标注
                 if (targetWidth && targetHeight) {
-                    filename = `nano-banana-修图结果-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `image-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 // 创建下载链接
@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         downloadBtn.classList.remove('success');
                         downloadBtn.disabled = false;
                         if (targetWidth && targetHeight) {
-                            downloadBtn.querySelector('.download-text').textContent = `下载图片 (已调整到原始尺寸 ${targetWidth}×${targetHeight})`;
+                            downloadBtn.querySelector('.download-text').textContent = `下载图片 ${targetWidth}×${targetHeight})`;
                         } else {
                             downloadBtn.querySelector('.download-text').textContent = '下载图片';
                         }
@@ -837,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 downloadBtn.classList.remove('downloading');
                 downloadBtn.disabled = false;
                 if (targetWidth && targetHeight) {
-                    downloadBtn.querySelector('.download-text').textContent = `下载图片 (已调整到原始尺寸 ${targetWidth}×${targetHeight})`;
+                    downloadBtn.querySelector('.download-text').textContent = `下载图片 ${targetWidth}×${targetHeight})`;
                 } else {
                     downloadBtn.querySelector('.download-text').textContent = '下载图片';
                 }
@@ -852,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadBtn.classList.remove('downloading');
             downloadBtn.disabled = false;
             if (targetWidth && targetHeight) {
-                downloadBtn.querySelector('.download-text').textContent = `下载图片 (已调整到原始尺寸 ${targetWidth}×${targetHeight})`;
+                downloadBtn.querySelector('.download-text').textContent = `下载图片 ${targetWidth}×${targetHeight})`;
             } else {
                 downloadBtn.querySelector('.download-text').textContent = '下载图片';
             }
@@ -865,7 +865,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetDownloadButton() {
         downloadBtn.classList.remove('downloading', 'success');
         downloadBtn.disabled = false;
-        downloadBtn.querySelector('.download-text').textContent = '下载图片 (自动调整到原始尺寸)';
+        downloadBtn.querySelector('.download-text').textContent = '下载图片';
     }
 
     // --- 高效的图片缩放函数 ---
@@ -949,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 downloadBtn.classList.remove('hidden'); // 显示下载按钮
                 
                 // 更新下载按钮文本
-                downloadBtn.querySelector('.download-text').textContent = `下载图片 (已调整到原始尺寸 ${targetWidth}×${targetHeight})`;
+                downloadBtn.querySelector('.download-text').textContent = `下载图片 ${targetWidth}×${targetHeight})`;
             } else {
                 // 后端未处理，前端处理
                 console.log('后端未处理，前端进行图片调整');
@@ -960,7 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         downloadBtn.classList.remove('hidden'); // 显示下载按钮
                         
                         // 更新下载按钮文本，显示已调整到原始尺寸
-                        downloadBtn.querySelector('.download-text').textContent = `下载图片 (已调整到原始尺寸 ${targetWidth}×${targetHeight})`;
+                        downloadBtn.querySelector('.download-text').textContent = `下载图片 ${targetWidth}×${targetHeight})`;
                     })
                     .catch((error) => {
                         console.error('图片尺寸调整失败:', error);
@@ -1015,12 +1015,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 更新下载提示信息
     function updateDownloadHint() {
         const downloadHint = document.querySelector('.download-hint');
-        if (downloadHint && originalImageDimensions) {
-            downloadHint.textContent = `💡 下载时会自动将图片调整到原始尺寸 (${originalImageDimensions.width} × ${originalImageDimensions.height} 像素)`;
-            console.log('下载提示已更新:', downloadHint.textContent);
-        } else if (downloadHint) {
-            downloadHint.textContent = '💡 下载原始尺寸的图片';
-            console.log('下载提示已更新 (无原始尺寸信息)');
+        if (downloadHint) {
+            downloadHint.textContent = '💡 下载高质量图片';
+            console.log('下载提示已更新');
         }
     }
 
@@ -1065,11 +1062,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.href = imageUrl;
                 
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `nano-banana-历史图片-${timestamp}.png`;
+                let filename = `photo-${timestamp}.png`;
                 
                 // 如果调整了尺寸，在文件名中标注
                 if (targetWidth && targetHeight) {
-                    filename = `nano-banana-历史图片-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `photo-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 // 创建下载链接
@@ -1117,11 +1114,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('创建的 blob URL:', blobUrl);
                 
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-                let filename = `nano-banana-历史图片-${timestamp}.png`;
+                let filename = `photo-${timestamp}.png`;
                 
                 // 如果调整了尺寸，在文件名中标注
                 if (targetWidth && targetHeight) {
-                    filename = `nano-banana-历史图片-${targetWidth}x${targetHeight}-${timestamp}.png`;
+                    filename = `photo-${targetWidth}x${targetHeight}-${timestamp}.png`;
                 }
                 
                 // 创建下载链接

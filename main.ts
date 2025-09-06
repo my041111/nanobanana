@@ -365,14 +365,21 @@ async function processImageEdit(
     if (!images || images.length === 0) { throw new Error("At least one image is required."); }
     if (!prompt || prompt.trim() === '') { throw new Error("Edit prompt is required."); }
     
-    // 优化提示词，使其更简洁高效，专注于快速处理
-    const optimizedPrompt = `快速处理图片：${prompt}
+    // 优化提示词，强调只修改指定部分，其余保持原图一致
+    const optimizedPrompt = `请严格按照以下要求处理图片：
 
-要求：
-- 保持原始尺寸 ${originalWidth} x ${originalHeight}
-- 优先速度，快速生成
-- 只返回图片，不要文字
-- 使用高质量输出`;
+用户指令：${prompt}
+
+核心要求：
+1. 只修改用户指令中明确要求变更的部分
+2. 除指令要求变更的内容外，其余所有内容必须与原图保持完全一致
+3. 不要添加、删除或改变任何未在指令中提及的元素
+4. 保持原始尺寸 ${originalWidth} x ${originalHeight}
+5. 保持原图的构图、角度、透视关系
+6. 保持原图的色彩风格和色调（除非指令要求改变）
+7. 保持原图中人物的表情、姿势、服装（除非指令要求改变）
+8. 保持原图的背景和环境（除非指令要求改变）
+9. 只返回处理后的图片，不要任何文字说明`;
 
     // 预处理图片以提高处理速度
     const optimizedImages = await Promise.all(
@@ -585,16 +592,22 @@ serve(async (req) => {
             console.log("Processing image edit with dimensions:", { originalWidth, originalHeight });
             console.log("Using API Base URL:", finalApiBaseUrl);
             
-            // 构建专门用于图片生成的提示词
-            const imageGenerationPrompt = `请根据以下要求处理图片：
+            // 构建专门用于图片生成的提示词，强调精确修改
+            const imageGenerationPrompt = `请严格按照以下要求处理图片：
 
-${prompt}
+用户指令：${prompt}
 
-重要要求：
-1. 必须返回一张处理后的图片，不要返回文字描述
-2. 保持原始尺寸 ${originalWidth} x ${originalHeight}
-3. 图片质量要高，清晰度要好
-4. 只返回图片，不要任何文字说明`;
+核心要求：
+1. 只修改用户指令中明确要求变更的部分
+2. 除指令要求变更的内容外，其余所有内容必须与原图保持完全一致
+3. 不要添加、删除或改变任何未在指令中提及的元素
+4. 保持原始尺寸 ${originalWidth} x ${originalHeight}
+5. 保持原图的构图、角度、透视关系
+6. 保持原图的色彩风格和色调（除非指令要求改变）
+7. 保持原图中人物的表情、姿势、服装（除非指令要求改变）
+8. 保持原图的背景和环境（除非指令要求改变）
+9. 图片质量要高，清晰度要好
+10. 只返回处理后的图片，不要任何文字说明`;
 
             const webUiMessages = [ { 
                 role: "user", 
